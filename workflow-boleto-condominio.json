@@ -36,7 +36,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Processa cada email encontrado\nconst results = [];\n\nfor (const item of $input.all()) {\n  const subject = item.json.subject || '';\n  let body = '';\n\n  // Tenta obter o corpo do email em texto ou HTML\n  if (item.json.textPlain) {\n    body = item.json.textPlain;\n  } else if (item.json.textHtml) {\n    body = item.json.textHtml;\n  } else if (item.json.payload && item.json.payload.body && item.json.payload.body.data) {\n    // Decodifica base64url\n    const base64 = item.json.payload.body.data.replace(/-/g, '+').replace(/_/g, '/');\n    body = Buffer.from(base64, 'base64').toString('utf-8');\n  }\n\n  // Extrai o link do Bill (formato: https://ssl.brcondos.com.br/Bill/{uuid})\n  const billRegex = /https:\\/\\/ssl\\.brcondos\\.com\\.br\\/Bill\\/([a-f0-9\\-]{36})/i;\n  const match = body.match(billRegex);\n\n  if (match) {\n    const billUuid = match[1];\n    const billUrl = `https://ssl.brcondos.com.br/Bill/${billUuid}`;\n\n    results.push({\n      json: {\n        subject: subject,\n        billUuid: billUuid,\n        billUrl: billUrl,\n        messageId: item.json.id || item.json.messageId || ''\n      }\n    });\n  }\n}\n\nif (results.length === 0) {\n  throw new Error('Nenhum link de boleto encontrado nos emails.');\n}\n\nreturn results;"
+        "jsCode": "// Extrai o link do boleto BrCondo do email\n// Suporta todas as estruturas de dados do Gmail Trigger (simple e full)\nconst results = [];\n\nfunction decodeBase64Url(data) {\n  const base64 = data.replace(/-/g, '+').replace(/_/g, '/');\n  return Buffer.from(base64, 'base64').toString('utf-8');\n}\n\nfunction extractBodyTexts(emailData) {\n  const texts = [];\n\n  // 1. Campos diretos (simple: true)\n  if (emailData.textPlain) texts.push(emailData.textPlain);\n  if (emailData.textHtml) texts.push(emailData.textHtml);\n\n  // 2. Snippet (sempre presente)\n  if (emailData.snippet) texts.push(emailData.snippet);\n\n  // 3. payload.body.data (email sem multipart)\n  if (emailData.payload && emailData.payload.body && emailData.payload.body.data) {\n    texts.push(decodeBase64Url(emailData.payload.body.data));\n  }\n\n  // 4. payload.parts (multipart)\n  if (emailData.payload && emailData.payload.parts) {\n    for (const part of emailData.payload.parts) {\n      if (part.body && part.body.data) {\n        texts.push(decodeBase64Url(part.body.data));\n      }\n      // Sub-parts (multipart aninhado)\n      if (part.parts) {\n        for (const subPart of part.parts) {\n          if (subPart.body && subPart.body.data) {\n            texts.push(decodeBase64Url(subPart.body.data));\n          }\n        }\n      }\n    }\n  }\n\n  // 5. Busca no JSON inteiro como fallback\n  if (texts.length === 0) {\n    texts.push(JSON.stringify(emailData));\n  }\n\n  return texts;\n}\n\nfor (const item of $input.all()) {\n  const emailData = item.json;\n  const subject = emailData.subject || emailData.payload?.headers?.find(h => h.name === 'Subject')?.value || '';\n  const allTexts = extractBodyTexts(emailData);\n  const combined = allTexts.join(' ');\n\n  // Extrai o link do Bill\n  const billRegex = /https:\\/\\/ssl\\.brcondos\\.com\\.br\\/Bill\\/([a-f0-9\\-]{36})/i;\n  const match = combined.match(billRegex);\n\n  if (match) {\n    results.push({\n      json: {\n        subject: subject,\n        billUuid: match[1],\n        billUrl: `https://ssl.brcondos.com.br/Bill/${match[1]}`,\n        messageId: emailData.id || emailData.messageId || ''\n      }\n    });\n  }\n}\n\nif (results.length === 0) {\n  throw new Error('Nenhum link de boleto encontrado nos emails. Verifique se o email contém o link ssl.brcondos.com.br/Bill/...');\n}\n\nreturn results;"
       },
       "id": "2118ac3c-963f-459b-82de-12322116bebd",
       "name": "Extrair Link do Boleto",
@@ -118,7 +118,13 @@
         960,
         0
       ],
-      "webhookId": "93ef5815-ca40-4462-b065-7ad9c8d3dfb2"
+      "webhookId": "93ef5815-ca40-4462-b065-7ad9c8d3dfb2",
+      "credentials": {
+        "telegramApi": {
+          "id": "c8kX1VEc7IT1WPSV",
+          "name": "Telegram Bot (GB Secretary)"
+        }
+      }
     },
     {
       "parameters": {
