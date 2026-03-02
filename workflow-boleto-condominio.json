@@ -82,40 +82,18 @@
     },
     {
       "parameters": {
-        "url": "={{ $json.pdfUrl }}",
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "file"
-            }
-          }
-        }
-      },
-      "id": "137421f6-446e-4b6b-b37b-e447904d715d",
-      "name": "Baixar PDF do Boleto",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        720,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "sendDocument",
         "chatId": "54859439",
-        "binaryData": true,
+        "text": "=\uD83C\uDFE2 *{{ $('Extrair Link do Boleto').first().json.subject }}*\n\n\uD83D\uDCCE Clique no link abaixo para baixar o PDF do boleto:\n{{ $json.pdfUrl }}",
         "additionalFields": {
-          "caption": "={{ $('Extrair Link do Boleto').first().json.subject }}",
-          "fileName": "Boleto-Condominio.pdf"
+          "parse_mode": "Markdown"
         }
       },
       "id": "58730d64-1da0-4387-9bd8-1012e2b34a7f",
-      "name": "Enviar PDF via Telegram",
+      "name": "Enviar Link via Telegram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
       "position": [
-        960,
+        720,
         0
       ],
       "webhookId": "93ef5815-ca40-4462-b065-7ad9c8d3dfb2",
@@ -200,18 +178,7 @@
       "main": [
         [
           {
-            "node": "Baixar PDF do Boleto",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baixar PDF do Boleto": {
-      "main": [
-        [
-          {
-            "node": "Enviar PDF via Telegram",
+            "node": "Enviar Link via Telegram",
             "type": "main",
             "index": 0
           }

@@ -5,19 +5,19 @@ Automação usando n8n com o objetivo de extrair o PDF (boleto do condomínio) d
 ## Fluxo do Workflow
 
 ```
-Agendamento (8h) → Gmail → Tem Email? → Extrair Link → Acessar Página → Extrair URL PDF → Baixar PDF → Enviar via Telegram
+Gmail Trigger (8:30) → Tem Email? → Extrair Link → Acessar Página → Extrair URL PDF → Enviar Link via Telegram
 ```
 
 ### Nodes
 
-1. **Agendamento Diário 8h** — Schedule Trigger, executa todos os dias às 8h (fuso: America/Sao_Paulo)
-2. **Gmail - Buscar Emails** — Busca emails não lidos de `contato@brcondos.com.br` com "Boleto" no assunto
-3. **Tem Email?** — Verifica se encontrou algum email
-4. **Extrair Link do Boleto** — Decodifica o corpo do email e extrai o link `/Bill/{uuid}`
-5. **Acessar Página do Boleto** — Faz GET na página do boleto para obter o HTML
-6. **Extrair URL do PDF** — Extrai o link direto do PDF (`/BillPDF/{uuid}/...`) do HTML
-7. **Baixar PDF do Boleto** — Faz download do arquivo PDF
-8. **Enviar PDF via Telegram** — Envia o PDF para o ChatID `54859439`
+1. **Gmail Trigger** — Polling às 8:30, filtra emails de `contato@brcondos.com.br` com "Boleto" no assunto
+2. **Tem Email?** — Verifica se encontrou algum email
+3. **Extrair Link do Boleto** — Decodifica o corpo do email e extrai o link `/Bill/{uuid}`
+4. **Acessar Página do Boleto** — Faz GET na página do boleto para obter o HTML
+5. **Extrair URL do PDF** — Extrai o link do PDF (`/BillPDF/{uuid}/...`) do HTML
+6. **Enviar Link via Telegram** — Envia mensagem com o link do PDF para o ChatID `54859439`
+
+> **Nota:** O download direto do PDF não é possível via n8n porque a BrCondo gera o PDF assincronamente via WebSocket/SignalR. O link enviado abre no browser e gera o PDF automaticamente.
 
 ## Como usar
 
